@@ -1,0 +1,2486 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>辩论赛系统（离线版）</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel2: rgba(255, 255, 255, 0.09);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.68);
+        --faint: rgba(255, 255, 255, 0.52);
+        --border: rgba(255, 255, 255, 0.12);
+        --accent: #7c5cff;
+        --good: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+        --radius: 14px;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans",
+          "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background: radial-gradient(1200px 500px at 18% -10%, rgba(124, 92, 255, 0.55), transparent 60%),
+          radial-gradient(1000px 500px at 75% 0%, rgba(34, 197, 94, 0.22), transparent 55%),
+          radial-gradient(900px 500px at 80% 80%, rgba(245, 158, 11, 0.18), transparent 60%), var(--bg);
+        min-height: 100vh;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 18px 16px 60px;
+      }
+
+      .topbar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 10px;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .brand h1 {
+        font-size: 16px;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+      .brand .sub {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .pill {
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--muted);
+        font-size: 12px;
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .pill strong {
+        color: var(--text);
+        font-weight: 650;
+      }
+
+      .btn {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1;
+        transition: transform 0.05s ease, background 0.12s ease, border-color 0.12s ease;
+        user-select: none;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn.primary {
+        background: linear-gradient(180deg, rgba(124, 92, 255, 0.95), rgba(124, 92, 255, 0.72));
+        border-color: rgba(124, 92, 255, 0.9);
+      }
+
+      .btn.good {
+        background: linear-gradient(180deg, rgba(34, 197, 94, 0.95), rgba(34, 197, 94, 0.65));
+        border-color: rgba(34, 197, 94, 0.85);
+      }
+
+      .btn.danger {
+        background: linear-gradient(180deg, rgba(239, 68, 68, 0.92), rgba(239, 68, 68, 0.62));
+        border-color: rgba(239, 68, 68, 0.85);
+      }
+
+      .btn.ghost {
+        background: transparent;
+      }
+
+      .btn.small {
+        padding: 6px 8px;
+        border-radius: 9px;
+        font-size: 12px;
+      }
+
+      .grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1.25fr 0.95fr;
+        gap: 14px;
+      }
+
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .topbar {
+          position: static;
+        }
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .card h2 {
+        margin: 0;
+        font-size: 14px;
+        letter-spacing: 0.2px;
+      }
+
+      .card-header {
+        padding: 12px 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .card-body {
+        padding: 12px;
+      }
+
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+      .faint {
+        color: var(--faint);
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      @media (max-width: 650px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 9px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--text);
+        outline: none;
+        font-size: 13px;
+      }
+
+      textarea {
+        min-height: 86px;
+        resize: vertical;
+      }
+
+      .input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: rgba(124, 92, 255, 0.75);
+        box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.16);
+      }
+
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .table th,
+      .table td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 10px 8px;
+        vertical-align: top;
+        font-size: 13px;
+      }
+
+      .table th {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 12px;
+        font-weight: 650;
+        text-transform: none;
+      }
+
+      .tag {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .tag.good {
+        border-color: rgba(34, 197, 94, 0.35);
+        background: rgba(34, 197, 94, 0.14);
+      }
+      .tag.warn {
+        border-color: rgba(245, 158, 11, 0.4);
+        background: rgba(245, 158, 11, 0.14);
+      }
+      .tag.bad {
+        border-color: rgba(239, 68, 68, 0.42);
+        background: rgba(239, 68, 68, 0.14);
+      }
+
+      .mono {
+        font-family: var(--mono);
+      }
+
+      .divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.12);
+        margin: 6px 0;
+      }
+
+      .toast-wrap {
+        position: fixed;
+        right: 14px;
+        bottom: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 100;
+      }
+      .toast {
+        max-width: min(460px, calc(100vw - 28px));
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.38);
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow);
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .toast strong {
+        font-weight: 700;
+      }
+
+      dialog {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 14px;
+        background: rgba(18, 24, 42, 0.98);
+        color: var(--text);
+        box-shadow: var(--shadow);
+        padding: 0;
+        width: min(760px, calc(100vw - 24px));
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+      }
+      .modal-header {
+        padding: 12px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .modal-body {
+        padding: 12px;
+      }
+
+      .notice {
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(124, 92, 255, 0.35);
+        background: rgba(124, 92, 255, 0.12);
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 13px;
+      }
+
+      .kbd {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.2);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="topbar">
+        <div class="brand">
+          <h1>辩论赛系统（离线版）</h1>
+          <div class="sub">
+            数据保存在 <span class="kbd">localStorage</span>，无需联网；管理员密码在页面源码中配置（默认 <span class="kbd">admin123</span>）。
+          </div>
+        </div>
+        <div class="toolbar">
+          <span class="pill" id="authPill"><strong>身份</strong><span class="muted">普通查看</span></span>
+          <button class="btn" id="btnRefresh">刷新</button>
+          <button class="btn" id="btnExport">导出 JSON</button>
+          <button class="btn" id="btnImport">导入 JSON</button>
+          <button class="btn" id="btnTeamLogin">队伍登录</button>
+          <button class="btn danger" id="btnTeamLogout" style="display: none">退出队伍</button>
+          <button class="btn primary" id="btnAdmin">管理员登录</button>
+          <button class="btn danger" id="btnLogout" style="display: none">退出管理</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>赛程 / 对阵</h2>
+            <div class="row">
+              <label>
+                <span class="faint">状态筛选</span>
+                <select id="matchFilter" style="width: 160px">
+                  <option value="all">全部</option>
+                  <option value="not_started">未开始</option>
+                  <option value="in_progress">进行中</option>
+                  <option value="ended">已结束</option>
+                  <option value="bye">轮空晋级</option>
+                </select>
+              </label>
+              <span class="pill"><strong id="matchCount">0</strong><span class="muted">场</span></span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="matchList" class="stack"></div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <div class="card-header">
+              <h2>队伍</h2>
+              <span class="pill"><strong id="teamCount">0</strong><span class="muted">支</span></span>
+            </div>
+            <div class="card-body">
+              <div id="teamList" class="stack"></div>
+            </div>
+          </div>
+
+          <div class="card" id="adminPanel" style="display: none">
+            <div class="card-header">
+              <h2>管理面板</h2>
+              <span class="pill"><strong>管理员</strong><span class="muted">可编辑/抽签/分配</span></span>
+            </div>
+            <div class="card-body">
+              <div class="stack">
+                <div class="notice">
+                  提示：本系统无真实安全性，仅用于组织内部。所有操作会立即写入浏览器 <span class="kbd">localStorage</span>。
+                </div>
+
+                <div class="card" style="background: rgba(255, 255, 255, 0.04)">
+                  <div class="card-header">
+                    <h2>抽签与配对</h2>
+                    <div class="row">
+                      <label class="pill">
+                        <strong>自动分配正反方</strong>
+                        <input id="toggleAutoSides" type="checkbox" style="accent-color: var(--accent)" />
+                      </label>
+                      <label class="pill">
+                        <strong>队伍抽签</strong>
+                        <select id="teamDrawEnabled" style="width: 120px">
+                          <option value="off">未开放</option>
+                          <option value="on">已开放</option>
+                        </select>
+                      </label>
+                      <label class="pill">
+                        <strong>队伍抽题</strong>
+                        <select id="teamTopicEnabled" style="width: 120px">
+                          <option value="off">未开放</option>
+                          <option value="on">已开放</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="split">
+                      <div class="stack">
+                        <label>抽签序号最大值（允许重复，范围 1..N）</label>
+                        <input class="input" id="drawMax" type="number" min="1" step="1" placeholder="例如 3" />
+                        <div class="row">
+                          <button class="btn primary" id="btnPairFromDraw">配对并生成轮空（需全队已抽签）</button>
+                          <button class="btn" id="btnClearDraw">清空抽签/配对结果</button>
+                        </div>
+                        <div class="faint" style="font-size: 12px; line-height: 1.5">
+                          抽签方式：每支队伍在“队伍列表/详情”中单独抽取序号。待所有队伍抽完后，再点“配对并生成轮空”。
+                          <br />
+                          配对规则：按抽签序号分组；组内随机两两配对；若组内为奇数则随机轮空 1 支（轮空队伍不参与辩题抽取，状态为“轮空晋级”）。
+                        </div>
+                      </div>
+                      <div class="stack">
+                        <label>辩题抽取（隐私模式）</label>
+                        <div class="row">
+                          <button class="btn good" id="btnAssignTopics">逐队抽取辩题（去队伍详情）</button>
+                          <button class="btn" id="btnClearTopicUsage">清空“不可重复”占用记录</button>
+                        </div>
+                        <div class="faint" style="font-size: 12px; line-height: 1.5">
+                          为隐私起见，辩题抽取需管理员进入各队伍“详情”后执行；不可重复辩题：同一届已使用过则不会再次抽到。
+                        </div>
+                      </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="row">
+                      <button class="btn" id="btnManageTeams">队伍管理</button>
+                      <button class="btn" id="btnManageTopics">辩题库管理</button>
+                      <button class="btn" id="btnManageMatches">赛程管理</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card" style="background: rgba(255, 255, 255, 0.04)">
+                  <div class="card-header">
+                    <h2>数据工具</h2>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <button class="btn" id="btnLoadDemo">重置到示例数据</button>
+                      <button class="btn danger" id="btnWipeAll">清空所有数据</button>
+                    </div>
+                    <div class="faint" style="font-size: 12px; line-height: 1.5">
+                      “重置到示例数据”会覆盖当前数据；“清空所有数据”不可恢复。
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-wrap" id="toasts"></div>
+
+    <dialog id="dlgLogin">
+      <div class="modal-header">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <strong>管理员登录</strong>
+          <span class="faint" style="font-size: 12px">密码默认 <span class="kbd">admin123</span>（可在源码里改）</span>
+        </div>
+        <button class="btn small ghost" data-close>关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="stack">
+          <label>管理员密码</label>
+          <input class="input" id="adminPassword" type="password" placeholder="请输入密码" />
+          <div class="row">
+            <button class="btn primary" id="btnDoLogin">登录</button>
+            <span class="faint" style="font-size: 12px">登录状态仅保存在本页面会话中（刷新后需重新登录）。</span>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="dlgTeamLogin">
+      <div class="modal-header">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <strong>队伍登录</strong>
+          <span class="faint" style="font-size: 12px">登录后仅能为本队抽签/抽题；配对在全队抽签完毕前不会公开显示。</span>
+        </div>
+        <button class="btn small ghost" data-close>关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="stack">
+          <div class="split">
+            <div class="stack">
+              <label>选择队伍</label>
+              <select id="teamLoginSelect"></select>
+            </div>
+            <div class="stack">
+              <label>队伍密码</label>
+              <input class="input" id="teamLoginPassword" type="password" placeholder="请输入队伍密码" />
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="btnDoTeamLogin">登录</button>
+            <span class="faint" style="font-size: 12px">队伍登录状态仅保存在本页面会话中（刷新后需重新登录）。</span>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="dlgManager">
+      <div class="modal-header">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <strong id="dlgTitle">管理</strong>
+          <span class="faint" style="font-size: 12px" id="dlgSub">增删改查</span>
+        </div>
+        <button class="btn small ghost" data-close>关闭</button>
+      </div>
+      <div class="modal-body">
+        <div id="dlgContent"></div>
+      </div>
+    </dialog>
+
+    <input id="fileImport" type="file" accept="application/json" style="display: none" />
+
+    <script>
+      // ========= 配置 =========
+      const ADMIN_PASSWORD = "admin123"; // 改这里即可
+
+      // ========= 存储 =========
+      const STORAGE_KEY = "debateSystem.v1";
+      const SESSION_KEY = "debateSystem.session.isAdmin";
+      const TEAM_SESSION_KEY = "debateSystem.session.teamId";
+      const MEMORY_KEY = "__debateSystemMemoryState";
+      let warnedStorageUnavailable = false;
+
+      function getBestStore() {
+        // 优先 localStorage，其次 sessionStorage，最后内存
+        const testKey = "__debateSystem_test__";
+        const tryStore = (store, name) => {
+          if (!store) return null;
+          try {
+            store.setItem(testKey, "1");
+            store.removeItem(testKey);
+            return { store, name };
+          } catch {
+            return null;
+          }
+        };
+        return tryStore(window.localStorage, "localStorage") || tryStore(window.sessionStorage, "sessionStorage") || { store: null, name: "memory" };
+      }
+
+      function storageGet(key) {
+        const best = getBestStore();
+        if (best.store) return best.store.getItem(key);
+        return null;
+      }
+      function storageSet(key, value) {
+        const best = getBestStore();
+        if (best.store) best.store.setItem(key, value);
+      }
+      function storageRemove(key) {
+        const best = getBestStore();
+        if (best.store) best.store.removeItem(key);
+      }
+
+      function nowIso() {
+        return new Date().toISOString();
+      }
+
+      function uid(prefix) {
+        return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+      }
+
+      function safeJsonParse(s, fallback) {
+        try {
+          return JSON.parse(s);
+        } catch {
+          return fallback;
+        }
+      }
+
+      function loadState() {
+        let raw = null;
+        try {
+          raw = storageGet(STORAGE_KEY);
+        } catch {
+          raw = null;
+        }
+        const best = getBestStore();
+        if (best.name !== "localStorage" && !warnedStorageUnavailable) {
+          warnedStorageUnavailable = true;
+          const msg =
+            best.name === "sessionStorage"
+              ? "当前环境无法使用 localStorage，已降级为 sessionStorage（关闭浏览器/新窗口可能丢失）。"
+              : "当前环境无法使用 localStorage/sessionStorage，仅临时保存（关闭页面将丢失）。建议用本地 http 方式打开。";
+          setTimeout(() => toast("存储已降级", msg, "warn"), 80);
+        }
+
+        const st = safeJsonParse(raw, null) || window[MEMORY_KEY] || null;
+        const base = defaultState();
+        if (!st || typeof st !== "object") return base;
+        // 轻量迁移/合并
+        return {
+          ...base,
+          ...st,
+          settings: { ...base.settings, ...(st.settings || {}) },
+        };
+      }
+
+      function saveState(st) {
+        window[MEMORY_KEY] = st;
+        try {
+          storageSet(STORAGE_KEY, JSON.stringify(st));
+        } catch {
+          // 已在 loadState 里提示降级；此处保持静默
+        }
+      }
+
+      function defaultState() {
+        return {
+          version: 1,
+          updatedAt: nowIso(),
+          teams: [],
+          topics: [],
+          matches: [],
+          groupTopics: {},
+          topicUsage: {
+            usedNonRepeatableTopicIds: [],
+          },
+          settings: {
+            autoAssignSides: true,
+            drawMax: 3,
+            teamDrawEnabled: false,
+            teamTopicEnabled: false,
+          },
+        };
+      }
+
+      // ========= UI 小工具 =========
+      function $(sel) {
+        return document.querySelector(sel);
+      }
+      function el(tag, attrs = {}, children = []) {
+        const e = document.createElement(tag);
+        Object.entries(attrs).forEach(([k, v]) => {
+          if (k === "class") e.className = v;
+          else if (k === "dataset") Object.assign(e.dataset, v);
+          else if (k.startsWith("on") && typeof v === "function") e.addEventListener(k.slice(2), v);
+          else if (k === "html") e.innerHTML = v;
+          else if (v === false || v === null || v === undefined) return;
+          else e.setAttribute(k, v === true ? "" : String(v));
+        });
+        for (const c of children) {
+          if (c === false || c === null || c === undefined) continue;
+          if (c instanceof Node) {
+            e.appendChild(c);
+            continue;
+          }
+          // 兼容数字/布尔/对象等，统一转成文本节点，避免 appendChild 非 Node 报错
+          e.appendChild(document.createTextNode(String(c)));
+        }
+        return e;
+      }
+
+      function toast(title, msg, kind = "info") {
+        const wrap = $("#toasts");
+        const t = el("div", { class: "toast" }, [
+          el("div", {}, [el("strong", {}, [title]), " ", el("span", { class: "faint" }, [msg || ""])]),
+        ]);
+        if (kind === "good") t.style.borderColor = "rgba(34,197,94,0.35)";
+        if (kind === "bad") t.style.borderColor = "rgba(239,68,68,0.42)";
+        if (kind === "warn") t.style.borderColor = "rgba(245,158,11,0.4)";
+        wrap.appendChild(t);
+        setTimeout(() => {
+          t.style.opacity = "0";
+          t.style.transform = "translateY(4px)";
+          t.style.transition = "all 220ms ease";
+        }, 2600);
+        setTimeout(() => t.remove(), 3200);
+      }
+
+      function confirmDanger(msg) {
+        return window.confirm(msg);
+      }
+
+      function fmtTeamName(st, teamId) {
+        const t = st.teams.find((x) => x.id === teamId);
+        return t ? t.name : "（未知队伍）";
+      }
+
+      function fmtTopicName(st, topicId) {
+        const t = st.topics.find((x) => x.id === topicId);
+        return t ? t.title : "（未分配辩题）";
+      }
+
+      function sortMatches(st) {
+        // 时间字段是字符串，尽量按可解析日期排序；否则按字符串
+        const parse = (s) => {
+          const d = new Date(s);
+          return isNaN(d.getTime()) ? null : d.getTime();
+        };
+        return [...st.matches].sort((a, b) => {
+          const ta = a.time ? parse(a.time) : null;
+          const tb = b.time ? parse(b.time) : null;
+          if (ta !== null && tb !== null) return ta - tb;
+          if (ta !== null) return -1;
+          if (tb !== null) return 1;
+          return String(a.time || "").localeCompare(String(b.time || ""));
+        });
+      }
+
+      function computeMatchStatus(m) {
+        if (m.status === "bye") return "bye";
+        if (m.status === "ended") return "ended";
+        if (m.status === "in_progress") return "in_progress";
+        // not_started: 可选根据时间推断，但需求允许手动标记；这里保守只用 m.status
+        return "not_started";
+      }
+
+      function statusTag(status) {
+        if (status === "ended") return el("span", { class: "tag good" }, ["已结束"]);
+        if (status === "in_progress") return el("span", { class: "tag warn" }, ["进行中"]);
+        if (status === "bye") return el("span", { class: "tag good" }, ["轮空晋级"]);
+        return el("span", { class: "tag" }, ["未开始"]);
+      }
+
+      function sideLabel(side) {
+        if (side === "pro") return "正方";
+        if (side === "con") return "反方";
+        return "未分配";
+      }
+
+      function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function isAdmin() {
+        return sessionStorage.getItem(SESSION_KEY) === "1";
+      }
+
+      function setAdmin(flag) {
+        sessionStorage.setItem(SESSION_KEY, flag ? "1" : "0");
+        if (flag) {
+          // 管理员登录时，清空队伍会话，避免权限混淆
+          sessionStorage.setItem(TEAM_SESSION_KEY, "");
+        }
+      }
+
+      function currentTeamId() {
+        return sessionStorage.getItem(TEAM_SESSION_KEY) || "";
+      }
+
+      function setTeamSession(teamId) {
+        sessionStorage.setItem(TEAM_SESSION_KEY, teamId || "");
+        if (teamId) {
+          // 队伍登录时，清空管理员会话，避免权限混淆
+          sessionStorage.setItem(SESSION_KEY, "0");
+        }
+      }
+
+      function canOperateTeam(teamId) {
+        if (isAdmin()) return true;
+        const tid = currentTeamId();
+        return !!tid && tid === teamId;
+      }
+
+      function teamDrawOpen(st) {
+        return !!(st && st.settings && st.settings.teamDrawEnabled);
+      }
+
+      function teamTopicOpen(st) {
+        return !!(st && st.settings && st.settings.teamTopicEnabled);
+      }
+
+      // ========= 队伍/状态计算 =========
+      function computeTeamFacts(st, teamId) {
+        const team = st.teams.find((t) => t.id === teamId);
+        if (!team) return null;
+        const drawNumber = typeof team.drawNumber === "number" ? team.drawNumber : null;
+        const drawn = drawNumber !== null;
+
+        // 找与该队相关的对阵
+        const rel = st.matches.filter((m) => m.teamAId === teamId || m.teamBId === teamId || m.byeTeamId === teamId);
+        const byeMatch = rel.find((m) => m.status === "bye" && m.byeTeamId === teamId);
+        const ended = rel.filter((m) => m.status === "ended");
+        const ongoing = rel.filter((m) => m.status === "in_progress");
+        const upcoming = rel.filter((m) => m.status === "not_started");
+
+        let role = "待定";
+        const mWithSides = rel.find((m) => (m.teamAId === teamId && m.teamASide) || (m.teamBId === teamId && m.teamBSide));
+        if (byeMatch) role = "轮空";
+        else if (mWithSides) {
+          const s = mWithSides.teamAId === teamId ? mWithSides.teamASide : mWithSides.teamBSide;
+          role = sideLabel(s);
+        }
+
+        let debateTopic = null;
+        const mWithTopic = rel.find((m) => m.topicId);
+        if (mWithTopic) debateTopic = mWithTopic.topicId;
+
+        let teamStatus = "待比赛";
+        if (byeMatch) teamStatus = "轮空晋级";
+        if (ended.length > 0) {
+          const last = ended[ended.length - 1];
+          if (last.winnerTeamId) {
+            teamStatus = last.winnerTeamId === teamId ? "已晋级" : "已淘汰";
+          } else {
+            teamStatus = "已结束（未录入胜方）";
+          }
+        } else if (ongoing.length > 0) teamStatus = "进行中";
+
+        const matchStatus =
+          byeMatch ? "轮空晋级" : ongoing.length ? "进行中" : upcoming.length ? "待比赛" : ended.length ? "已结束" : "待比赛";
+
+        return {
+          team,
+          drawn,
+          drawNumber,
+          role,
+          debateTopicId: debateTopic,
+          teamStatus,
+          matchStatus,
+        };
+      }
+
+      // ========= 对阵生成（抽签/配对/轮空/正反方） =========
+      function drawForTeam(st, teamId) {
+        const team = st.teams.find((t) => t.id === teamId);
+        if (!team) return st;
+        if (!isAdmin() && !teamDrawOpen(st)) {
+          toast("未开放", "管理员尚未开放队伍抽签", "warn");
+          return st;
+        }
+        const max = Math.max(1, Number(st.settings.drawMax || 3) | 0);
+        // 规则（按用户反馈调整）：同一序号最多允许 2 支队伍抽到
+        const counts = new Map();
+        for (const t of st.teams) {
+          if (t.id === teamId) continue; // 允许重抽时释放自己原先占用
+          if (typeof t.drawNumber !== "number") continue;
+          counts.set(t.drawNumber, (counts.get(t.drawNumber) || 0) + 1);
+        }
+        const candidates = [];
+        for (let n = 1; n <= max; n++) {
+          if ((counts.get(n) || 0) < 2) candidates.push(n);
+        }
+        if (candidates.length === 0) {
+          toast("无法抽签", `序号 1..${max} 都已被抽满（每个最多 2 支队伍）`, "bad");
+          return st;
+        }
+        team.drawNumber = candidates[Math.floor(Math.random() * candidates.length)];
+        team.updatedAt = nowIso();
+        st.updatedAt = nowIso();
+        return st;
+      }
+
+      function assignTopicForTeam(st, teamId) {
+        if (!isAdmin() && !teamTopicOpen(st)) {
+          toast("未开放", "管理员尚未开放队伍抽题", "warn");
+          return st;
+        }
+        if (st.topics.length === 0) {
+          toast("无法抽题", "请先在辩题库中添加辩题", "warn");
+          return st;
+        }
+        const team = st.teams.find((t) => t.id === teamId);
+        if (!team) return st;
+        if (typeof team.drawNumber !== "number") {
+          toast("无法抽题", "请先为本队抽取序号", "warn");
+          return st;
+        }
+        const num = team.drawNumber;
+        const groupTeams = st.teams.filter((t) => t.drawNumber === num);
+        if (groupTeams.length < 2) {
+          toast("无法抽题", "当前序号下尚未形成对阵（至少需要两支队伍）", "warn");
+          return st;
+        }
+        st.groupTopics = st.groupTopics || {};
+        if (st.groupTopics[num]) {
+          toast("无需抽题", `本组已分配辩题：${fmtTopicName(st, st.groupTopics[num])}`, "warn");
+          return st;
+        }
+
+        // 找到该队参与的、未分配辩题的对阵（轮空不参与）
+        const rel = st.matches.filter(
+          (m) => m.status !== "bye" && !m.topicId && (m.teamAId === teamId || m.teamBId === teamId) && m.teamAId && m.teamBId
+        );
+        // 若管理员尚未生成对阵，也允许先为“序号组”抽题（将来生成对阵时同步）
+
+        // 优先：抽签生成且有组号，则给整组所有未分配对阵一起分配同一辩题
+        const withGroup = rel.find((m) => m.generatedByDraw && m.groupNumber);
+        const pool = availableTopicsForDraw(st);
+        if (pool.length === 0) {
+          toast("无法抽题", "所有“不可重复”辩题已用尽（或辩题库为空）", "bad");
+          return st;
+        }
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+
+        // 先写入组号辩题映射（队伍/游客不需要看到配对也能先抽题）
+        st.groupTopics[num] = pick.id;
+
+        if (withGroup) {
+          for (const m of st.matches) {
+            if (!m.generatedByDraw) continue;
+            if (m.groupNumber !== withGroup.groupNumber) continue;
+            if (m.status === "bye") continue;
+            if (!m.teamAId || !m.teamBId) continue;
+            if (m.topicId) continue;
+            m.topicId = pick.id;
+            m.updatedAt = nowIso();
+          }
+          markTopicUsedIfNeeded(st, pick.id);
+          st.updatedAt = nowIso();
+          toast("抽题完成", `已为序号 ${num} 分配辩题：${pick.title}`, "good");
+          return st;
+        }
+
+        // 若已存在相关对阵，则尽量同步一场；若尚未生成对阵，仅保存到 groupTopics 即可
+        if (rel.length > 0) {
+          const m = rel[0];
+          m.topicId = pick.id;
+          m.updatedAt = nowIso();
+        }
+        markTopicUsedIfNeeded(st, pick.id);
+        st.updatedAt = nowIso();
+        toast("抽题完成", `已为序号 ${num} 分配辩题：${pick.title}`, "good");
+        return st;
+      }
+
+      function clearDrawAndPairings(st) {
+        // 清空队伍抽签号
+        st.teams = st.teams.map((t) => ({ ...t, drawNumber: null }));
+        // 删除由系统生成的“抽签对阵”（保留手动赛程？这里统一保留全部 matches，但清空抽签生成标记的）
+        st.matches = st.matches.filter((m) => !m.generatedByDraw);
+        st.updatedAt = nowIso();
+      }
+
+      function pairFromDrawNumbers(st) {
+        if (st.teams.length === 0) {
+          toast("无法配对", "请先录入队伍", "warn");
+          return st;
+        }
+        const notDrawn = st.teams.filter((t) => typeof t.drawNumber !== "number");
+        if (notDrawn.length > 0) {
+          toast("无法配对", `仍有 ${notDrawn.length} 支队伍未抽签，请先逐队抽签`, "warn");
+          return st;
+        }
+        const teams = st.teams;
+
+        const groups = new Map();
+        for (const t of teams) {
+          const k = t.drawNumber;
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(t.id);
+        }
+
+        // 清理旧的抽签对阵
+        st.matches = st.matches.filter((m) => !m.generatedByDraw);
+
+        const newMatches = [];
+        const autoSides = !!st.settings.autoAssignSides;
+        st.groupTopics = st.groupTopics || {};
+
+        for (const [num, teamIds] of [...groups.entries()].sort((a, b) => a[0] - b[0])) {
+          const shuffled = shuffle(teamIds);
+          if (shuffled.length % 2 === 1) {
+            const byeTeamId = shuffled.shift(); // 随机轮空（已 shuffle）
+            newMatches.push({
+              id: uid("match"),
+              generatedByDraw: true,
+              groupNumber: num,
+              time: "",
+              location: "",
+              judges: "",
+              teamAId: null,
+              teamBId: null,
+              byeTeamId,
+              teamASide: null,
+              teamBSide: null,
+              topicId: null,
+              status: "bye",
+              winnerTeamId: byeTeamId,
+              note: "轮空晋级",
+              createdAt: nowIso(),
+              updatedAt: nowIso(),
+            });
+          }
+          for (let i = 0; i < shuffled.length; i += 2) {
+            const a = shuffled[i];
+            const b = shuffled[i + 1];
+            let teamASide = null;
+            let teamBSide = null;
+            if (autoSides) {
+              const flip = Math.random() < 0.5;
+              teamASide = flip ? "pro" : "con";
+              teamBSide = flip ? "con" : "pro";
+            }
+            newMatches.push({
+              id: uid("match"),
+              generatedByDraw: true,
+              groupNumber: num,
+              time: "",
+              location: "",
+              judges: "",
+              teamAId: a,
+              teamBId: b,
+              byeTeamId: null,
+              teamASide,
+              teamBSide,
+              // 配对不负责“抽取”辩题，只会带上已抽取过的组内辩题（如有）
+              topicId: (st.groupTopics && st.groupTopics[num]) ? st.groupTopics[num] : null,
+              status: "not_started",
+              winnerTeamId: null,
+              note: "",
+              createdAt: nowIso(),
+              updatedAt: nowIso(),
+            });
+          }
+        }
+
+        st.matches = [...st.matches, ...newMatches];
+        st.updatedAt = nowIso();
+        toast("配对完成", `已生成 ${newMatches.length} 条对阵/赛程`, "good");
+        return st;
+      }
+
+      function manualDrawSidesForMatch(st, matchId) {
+        const m = st.matches.find((x) => x.id === matchId);
+        if (!m || m.status === "bye") return st;
+        if (!m.teamAId || !m.teamBId) return st;
+        const flip = Math.random() < 0.5;
+        m.teamASide = flip ? "pro" : "con";
+        m.teamBSide = flip ? "con" : "pro";
+        m.updatedAt = nowIso();
+        st.updatedAt = nowIso();
+        toast("正反方已生成", `${fmtTeamName(st, m.teamAId)} / ${fmtTeamName(st, m.teamBId)}`, "good");
+        return st;
+      }
+
+      // ========= 辩题分配 =========
+      function availableTopicsForDraw(st) {
+        const used = new Set(st.topicUsage.usedNonRepeatableTopicIds || []);
+        return st.topics.filter((t) => t.repeatable || !used.has(t.id));
+      }
+
+      function markTopicUsedIfNeeded(st, topicId) {
+        const topic = st.topics.find((t) => t.id === topicId);
+        if (!topic) return;
+        if (topic.repeatable) return;
+        const used = new Set(st.topicUsage.usedNonRepeatableTopicIds || []);
+        used.add(topicId);
+        st.topicUsage.usedNonRepeatableTopicIds = [...used];
+      }
+
+      function assignTopicsForAllUnassigned(st) {
+        const need = st.matches.filter((m) => m.status !== "bye" && !m.topicId && m.teamAId && m.teamBId);
+        if (need.length === 0) {
+          toast("无需分配", "当前没有“未分配辩题”的对阵", "warn");
+          return st;
+        }
+        if (st.topics.length === 0) {
+          toast("无法分配", "请先在辩题库中添加辩题", "warn");
+          return st;
+        }
+
+        let pool = availableTopicsForDraw(st);
+        if (pool.length === 0) {
+          toast("无法分配", "所有“不可重复”辩题已用尽（或辩题库为空）", "bad");
+          return st;
+        }
+
+        // 规则（按用户反馈调整）：同一抽签序号（组号）内的对阵使用同一个辩题
+        const byGroup = new Map(); // groupKey -> matchIds
+        const singles = [];
+        for (const m of need) {
+          const key = m.generatedByDraw && m.groupNumber ? `g_${m.groupNumber}` : null;
+          if (!key) singles.push(m);
+          else {
+            if (!byGroup.has(key)) byGroup.set(key, []);
+            byGroup.get(key).push(m.id);
+          }
+        }
+
+        // 先按组分配
+        for (const [key, ids] of byGroup.entries()) {
+          pool = availableTopicsForDraw(st);
+          if (pool.length === 0) break;
+          const pick = pool[Math.floor(Math.random() * pool.length)];
+          for (const id of ids) {
+            const mm = st.matches.find((x) => x.id === id);
+            if (!mm) continue;
+            mm.topicId = pick.id;
+            mm.updatedAt = nowIso();
+          }
+          markTopicUsedIfNeeded(st, pick.id);
+        }
+
+        // 再处理手动/无组号的单场
+        for (const m of singles) {
+          pool = availableTopicsForDraw(st);
+          if (pool.length === 0) break;
+          const pick = pool[Math.floor(Math.random() * pool.length)];
+          m.topicId = pick.id;
+          m.updatedAt = nowIso();
+          markTopicUsedIfNeeded(st, pick.id);
+        }
+        st.updatedAt = nowIso();
+        toast("辩题分配完成", "已为未分配对阵抽取辩题", "good");
+        return st;
+      }
+
+      function setMatchTopic(st, matchId, topicId) {
+        const m = st.matches.find((x) => x.id === matchId);
+        if (!m || m.status === "bye") return st;
+        if (!topicId) {
+          m.topicId = null;
+          m.updatedAt = nowIso();
+          st.updatedAt = nowIso();
+          return st;
+        }
+        const topic = st.topics.find((t) => t.id === topicId);
+        if (!topic) return st;
+
+        if (!topic.repeatable) {
+          const used = new Set(st.topicUsage.usedNonRepeatableTopicIds || []);
+          // 如果本场之前已占用同一个不可重复题，允许；否则要检查是否被别的对阵占用
+          if (!used.has(topicId) && isNonRepeatTopicUsedElsewhere(st, topicId, matchId)) {
+            toast("设置失败", "该辩题不可重复且已被其他对阵使用", "bad");
+            return st;
+          }
+        }
+
+        // 若之前有不可重复辩题占用，不在此处自动释放（避免复杂引用）；提供“清空占用记录”按钮
+        // 规则（按用户反馈调整）：抽签生成且同组号的对阵，手动指定辩题时同步到同组所有非轮空对阵
+        if (m.generatedByDraw && m.groupNumber) {
+          for (const mm of st.matches) {
+            if (!mm.generatedByDraw) continue;
+            if (mm.groupNumber !== m.groupNumber) continue;
+            if (mm.status === "bye") continue;
+            if (!mm.teamAId || !mm.teamBId) continue;
+            mm.topicId = topicId;
+            mm.updatedAt = nowIso();
+          }
+        } else {
+          m.topicId = topicId;
+          m.updatedAt = nowIso();
+        }
+        markTopicUsedIfNeeded(st, topicId);
+        st.updatedAt = nowIso();
+        return st;
+      }
+
+      function isNonRepeatTopicUsedElsewhere(st, topicId, excludeMatchId) {
+        const topic = st.topics.find((t) => t.id === topicId);
+        if (!topic || topic.repeatable) return false;
+        return st.matches.some((m) => m.id !== excludeMatchId && m.topicId === topicId);
+      }
+
+      // ========= 管理对话框 =========
+      const dlgManager = $("#dlgManager");
+      const dlgTitle = $("#dlgTitle");
+      const dlgSub = $("#dlgSub");
+      const dlgContent = $("#dlgContent");
+
+      function openManager(title, sub, contentEl) {
+        dlgTitle.textContent = title;
+        dlgSub.textContent = sub;
+        dlgContent.innerHTML = "";
+        dlgContent.appendChild(contentEl);
+        dlgManager.showModal();
+      }
+
+      function closeAllDialogs() {
+        for (const d of document.querySelectorAll("dialog")) {
+          if (d.open) d.close();
+        }
+      }
+
+      document.addEventListener("click", (e) => {
+        const t = e.target;
+        if (t && t.matches && t.matches("[data-close]")) {
+          const dlg = t.closest("dialog");
+          if (dlg) dlg.close();
+        }
+      });
+
+      // ========= 渲染 =========
+      function render() {
+        const st = loadState();
+
+        // 顶部身份
+        const admin = isAdmin();
+        const tid = currentTeamId();
+        const tname = tid ? st.teams.find((t) => t.id === tid)?.name : "";
+        $("#authPill").innerHTML = admin
+          ? "<strong>身份</strong><span class='muted'>管理员</span>"
+          : tid
+            ? `<strong>身份</strong><span class='muted'>队伍：${tname || "（未知）"}</span>`
+            : "<strong>身份</strong><span class='muted'>游客</span>";
+        $("#btnAdmin").style.display = admin ? "none" : "";
+        $("#btnLogout").style.display = admin ? "" : "none";
+        $("#adminPanel").style.display = admin ? "" : "none";
+        $("#btnTeamLogin").style.display = admin || !!tid ? "none" : "";
+        $("#btnTeamLogout").style.display = !admin && !!tid ? "" : "none";
+
+        $("#toggleAutoSides").checked = !!st.settings.autoAssignSides;
+        $("#teamDrawEnabled").value = st.settings.teamDrawEnabled ? "on" : "off";
+        $("#teamTopicEnabled").value = st.settings.teamTopicEnabled ? "on" : "off";
+        $("#drawMax").value = String(st.settings.drawMax || 3);
+
+        // 队伍列表
+        $("#teamCount").textContent = String(st.teams.length);
+        const teamList = $("#teamList");
+        teamList.innerHTML = "";
+        if (st.teams.length === 0) {
+          teamList.appendChild(el("div", { class: "faint" }, ["暂无队伍。管理员可在“队伍管理”中添加。"]));
+        } else {
+          for (const t of st.teams.slice().sort((a, b) => a.name.localeCompare(b.name))) {
+            const facts = computeTeamFacts(st, t.id);
+            const row = el("div", { class: "card", style: "background: rgba(255,255,255,0.04); border-radius: 12px" }, [
+              el("div", { class: "card-body", style: "padding: 10px" }, [
+                el("div", { class: "row", style: "justify-content: space-between; align-items:flex-start" }, [
+                  el("div", { class: "stack", style: "gap:6px; min-width: 220px" }, [
+                    el("div", { style: "display:flex; gap:10px; align-items:center; flex-wrap:wrap" }, [
+                      el("strong", {}, [t.name]),
+                      facts?.drawn
+                        ? el("span", { class: "tag" }, [`抽签序号：${facts.drawNumber}`])
+                        : el("span", { class: "tag bad" }, ["未抽签"]),
+                    ]),
+                    el("div", { class: "faint", style: "font-size:12px; line-height:1.45" }, [
+                      `角色：${facts?.role || "待定"} · `,
+                      `辩题：${facts?.debateTopicId ? fmtTopicName(st, facts.debateTopicId) : "待分配"} · `,
+                      `状态：${facts?.teamStatus || "待比赛"}`,
+                    ]),
+                  ]),
+                  el("div", { class: "row" }, [
+                    admin
+                      ? el(
+                          "button",
+                          {
+                            class: "btn small",
+                            onclick: () => {
+                              openTeamDetail(st, t.id);
+                            },
+                          },
+                          ["详情/编辑"]
+                        )
+                      : el(
+                          "button",
+                          {
+                            class: "btn small",
+                            onclick: () => openTeamDetail(st, t.id),
+                          },
+                          ["查看详情"]
+                        ),
+                  ]),
+                ]),
+              ]),
+            ]);
+            teamList.appendChild(row);
+          }
+        }
+
+        // 赛程/对阵（公开门禁：全队抽签完毕前，非管理员不显示配对/赛程）
+        const allDrawn = st.teams.length > 0 && st.teams.every((t) => typeof t.drawNumber === "number");
+        const filter = $("#matchFilter").value;
+        const allMatches = sortMatches(st);
+        const shown = allMatches.filter((m) => {
+          const s = computeMatchStatus(m);
+          if (filter === "all") return true;
+          return s === filter;
+        });
+        $("#matchCount").textContent = String(shown.length);
+        const matchList = $("#matchList");
+        matchList.innerHTML = "";
+        if (!admin && !allDrawn) {
+          matchList.appendChild(el("div", { class: "notice" }, ["配对/赛程将在所有队伍抽签完成后公开显示。管理员可实时查看。"]));
+        } else if (shown.length === 0) {
+          matchList.appendChild(el("div", { class: "faint" }, ["暂无赛程。管理员可“赛程管理”手动添加，或通过“配对并生成轮空”自动生成。"]));
+        } else {
+          for (const m of shown) matchList.appendChild(renderMatchCard(st, m, admin));
+        }
+      }
+
+      function renderMatchCard(st, m, admin) {
+        const status = computeMatchStatus(m);
+        const headerLeft = el("div", { class: "stack", style: "gap:6px" }, [
+          el("div", { class: "row", style: "gap:8px; align-items:center; flex-wrap:wrap" }, [
+            statusTag(status),
+            m.groupNumber ? el("span", { class: "tag" }, [`组号：${m.groupNumber}`]) : null,
+            m.time ? el("span", { class: "tag" }, [m.time]) : el("span", { class: "tag" }, ["时间：未设置"]),
+            m.location ? el("span", { class: "tag" }, [m.location]) : el("span", { class: "tag" }, ["地点/链接：未设置"]),
+          ].filter(Boolean)),
+          status === "bye"
+            ? el("div", {}, [
+                el("strong", {}, [fmtTeamName(st, m.byeTeamId)]),
+                el("span", { class: "muted" }, [" 轮空晋级"]),
+              ])
+            : el("div", { style: "display:flex; flex-wrap:wrap; gap:10px; align-items:center" }, [
+                el("div", {}, [
+                  el("strong", {}, [fmtTeamName(st, m.teamAId)]),
+                  el("span", { class: "muted" }, [`（${sideLabel(m.teamASide)}）`]),
+                ]),
+                el("span", { class: "muted" }, ["vs"]),
+                el("div", {}, [
+                  el("strong", {}, [fmtTeamName(st, m.teamBId)]),
+                  el("span", { class: "muted" }, [`（${sideLabel(m.teamBSide)}）`]),
+                ]),
+              ]),
+          el("div", { class: "faint", style: "font-size:12px; line-height:1.5" }, [
+            `辩题：${m.topicId ? fmtTopicName(st, m.topicId) : "待分配"}`,
+            m.judges ? ` · 裁判/评委：${m.judges}` : "",
+            m.note ? ` · 备注：${m.note}` : "",
+          ]),
+        ]);
+
+        const actions = el("div", { class: "row", style: "justify-content:flex-end" }, []);
+        if (admin) {
+          actions.appendChild(
+            el(
+              "button",
+              {
+                class: "btn small",
+                onclick: () => {
+                  openMatchEditor(st, m.id);
+                },
+              },
+              ["编辑"]
+            )
+          );
+          if (status !== "bye") {
+            actions.appendChild(
+              el(
+                "button",
+                {
+                  class: "btn small",
+                  onclick: () => {
+                    const sst = loadState();
+                    manualDrawSidesForMatch(sst, m.id);
+                    saveState(sst);
+                    render();
+                  },
+                },
+                ["手动抽签正反方"]
+              )
+            );
+          }
+        }
+
+        const winnerLine =
+          status === "ended"
+            ? el("div", { class: "row", style: "gap:8px; align-items:center" }, [
+                el("span", { class: "tag good" }, ["胜方"]),
+                el("span", {}, [m.winnerTeamId ? fmtTeamName(st, m.winnerTeamId) : "未录入"]),
+              ])
+            : null;
+
+        return el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+          el("div", { class: "card-body", style: "padding: 12px" }, [
+            el("div", { class: "row", style: "justify-content: space-between; align-items:flex-start" }, [
+              el("div", { style: "flex:1; min-width: 260px" }, [headerLeft]),
+              el("div", { style: "display:flex; flex-direction:column; gap:8px; align-items:flex-end" }, [
+                actions,
+                winnerLine,
+              ]),
+            ]),
+          ]),
+        ]);
+      }
+
+      function openTeamDetail(st, teamId) {
+        const team = st.teams.find((t) => t.id === teamId);
+        if (!team) return;
+        const facts = computeTeamFacts(st, teamId);
+        const drawOpen = teamDrawOpen(st);
+        const topicOpen = teamTopicOpen(st);
+
+        const adminActions = isAdmin() || canOperateTeam(teamId)
+          ? el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+              el("div", { class: "card-header" }, [
+                el("h2", {}, [isAdmin() ? "抽签/抽题（管理员）" : "抽签/抽题（本队）"]),
+                el("span", { class: "faint", style: "font-size:12px" }, ["为隐私起见，仅在队伍详情内操作"]),
+              ]),
+              el("div", { class: "card-body" }, [
+                el("div", { class: "row", style: "justify-content:space-between; align-items:center" }, [
+                  el("div", { class: "stack", style: "gap:6px" }, [
+                    el("div", { class: "faint", style: "font-size:12px; line-height:1.5" }, [
+                      `当前序号：${facts?.drawn ? facts.drawNumber : "未抽签"} · 当前辩题：${facts?.debateTopicId ? fmtTopicName(st, facts.debateTopicId) : "待分配"}`,
+                    ]),
+                    el("div", { class: "faint", style: "font-size:12px; line-height:1.5" }, [
+                      "说明：抽题会分配到该队所在组号/对阵（轮空不参与）。",
+                    ]),
+                  ]),
+                  el("div", { class: "row" }, [
+                    el(
+                      "button",
+                      {
+                        class: "btn small",
+                        disabled: !isAdmin() && (!drawOpen || !canOperateTeam(teamId)),
+                        onclick: () => {
+                          if (!canOperateTeam(teamId)) {
+                            toast("无权限", "仅管理员或本队可操作", "bad");
+                            return;
+                          }
+                          const cur = loadState();
+                          if (!isAdmin() && !teamDrawOpen(cur)) {
+                            toast("未开放", "管理员尚未开放队伍抽签", "warn");
+                            return;
+                          }
+                          const sst = loadState();
+                          drawForTeam(sst, teamId);
+                          saveState(sst);
+                          toast("抽签完成", `${team.name} 序号：${sst.teams.find((x) => x.id === teamId)?.drawNumber}`, "good");
+                          dlgManager.close();
+                          render();
+                          openTeamDetail(loadState(), teamId);
+                        },
+                      },
+                      [facts?.drawn ? "重抽序号" : "抽取序号"]
+                    ),
+                    el(
+                      "button",
+                      {
+                        class: "btn small good",
+                        disabled: !isAdmin() && (!topicOpen || !canOperateTeam(teamId)),
+                        onclick: () => {
+                          if (!canOperateTeam(teamId)) {
+                            toast("无权限", "仅管理员或本队可操作", "bad");
+                            return;
+                          }
+                          const cur = loadState();
+                          if (!isAdmin() && !teamTopicOpen(cur)) {
+                            toast("未开放", "管理员尚未开放队伍抽题", "warn");
+                            return;
+                          }
+                          const sst = loadState();
+                          assignTopicForTeam(sst, teamId);
+                          saveState(sst);
+                          dlgManager.close();
+                          render();
+                          openTeamDetail(loadState(), teamId);
+                        },
+                      },
+                      ["为本队抽取辩题"]
+                    ),
+                  ]),
+                ]),
+              ]),
+            ])
+          : null;
+
+        const content = el("div", { class: "stack" }, [
+          el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+            el("div", { class: "card-body" }, [
+              el("div", { class: "row", style: "justify-content: space-between; align-items:flex-start" }, [
+                el("div", { class: "stack", style: "gap:6px" }, [
+                  el("strong", {}, [team.name]),
+                  el("div", { class: "faint", style: "font-size:12px; line-height:1.6" }, [
+                    `所属单位：${team.org || "（未填写）"}`,
+                    `\n队员名单：\n${team.members || "（未填写）"}`,
+                  ]),
+                ]),
+                el("div", { class: "stack", style: "gap:8px; align-items:flex-end" }, [
+                  facts?.drawn ? el("span", { class: "tag" }, [`抽签序号：${facts.drawNumber}`]) : el("span", { class: "tag bad" }, ["未抽签"]),
+                  el("span", { class: "tag" }, [`角色：${facts?.role || "待定"}`]),
+                  el("span", { class: "tag" }, [`状态：${facts?.teamStatus || "待比赛"}`]),
+                ]),
+              ]),
+            ]),
+          ]),
+          adminActions,
+          isAdmin()
+            ? renderTeamEditor(teamId)
+            : el("div", { class: "faint", style: "font-size:12px" }, ["（普通查看模式下不可编辑）"]),
+        ]);
+
+        openManager("队伍详情", "查看 /（管理员可编辑）", content);
+      }
+
+      function renderTeamEditor(teamId) {
+        const st = loadState();
+        const team = st.teams.find((t) => t.id === teamId);
+        if (!team) return el("div");
+
+        const name = el("input", { class: "input", value: team.name });
+        const org = el("input", { class: "input", value: team.org || "" });
+        const password = el("input", { class: "input", value: team.password || "", placeholder: "设置队伍密码（用于队伍登录）" });
+        const members = el("textarea", {}, [team.members || ""]);
+
+        return el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+          el("div", { class: "card-header" }, [el("h2", {}, ["编辑队伍信息"]), el("span", { class: "faint", style: "font-size:12px" }, ["保存后立即生效"])]),
+          el("div", { class: "card-body" }, [
+            el("div", { class: "split" }, [
+              el("div", { class: "stack" }, [el("label", {}, ["队伍名称"]), name]),
+              el("div", { class: "stack" }, [el("label", {}, ["所属单位（可选）"]), org]),
+            ]),
+            el("div", { class: "stack", style: "margin-top:10px" }, [el("label", {}, ["队伍登录密码（队员登录用）"]), password]),
+            el("div", { class: "stack", style: "margin-top:10px" }, [el("label", {}, ["队员名单（文本即可）"]), members]),
+            el("div", { class: "row", style: "margin-top:10px; justify-content:space-between" }, [
+              el(
+                "button",
+                {
+                  class: "btn danger",
+                  onclick: () => {
+                    if (!confirmDanger("确定删除该队伍？删除不可恢复。")) return;
+                    const sst = loadState();
+                    sst.teams = sst.teams.filter((x) => x.id !== teamId);
+                    // 关联对阵：若涉及该队伍，保留对阵但标记为空，避免数据崩溃
+                    for (const m of sst.matches) {
+                      if (m.teamAId === teamId) m.teamAId = null;
+                      if (m.teamBId === teamId) m.teamBId = null;
+                      if (m.byeTeamId === teamId) {
+                        m.byeTeamId = null;
+                        if (m.status === "bye") m.status = "not_started";
+                      }
+                      if (m.winnerTeamId === teamId) m.winnerTeamId = null;
+                      m.updatedAt = nowIso();
+                    }
+                    sst.updatedAt = nowIso();
+                    saveState(sst);
+                    toast("删除成功", "队伍已删除", "good");
+                    dlgManager.close();
+                    render();
+                  },
+                },
+                ["删除队伍"]
+              ),
+              el(
+                "button",
+                {
+                  class: "btn primary",
+                  onclick: () => {
+                    const sst = loadState();
+                    const t = sst.teams.find((x) => x.id === teamId);
+                    if (!t) return;
+                    const newName = name.value.trim();
+                    if (!newName) {
+                      toast("保存失败", "队伍名称不能为空", "bad");
+                      return;
+                    }
+                    t.name = newName;
+                    t.org = org.value.trim();
+                    t.password = password.value;
+                    t.members = members.value.trim();
+                    t.updatedAt = nowIso();
+                    sst.updatedAt = nowIso();
+                    saveState(sst);
+                    toast("保存成功", "队伍信息已更新", "good");
+                    render();
+                    dlgManager.close();
+                  },
+                },
+                ["保存"]
+              ),
+            ]),
+          ]),
+        ]);
+      }
+
+      function openMatchEditor(st, matchId) {
+        const m = st.matches.find((x) => x.id === matchId);
+        if (!m) return;
+        openManager("赛程编辑", "修改时间/地点/裁判/状态/胜方/辩题", renderMatchEditor(matchId));
+      }
+
+      function renderMatchEditor(matchId) {
+        const st = loadState();
+        const m = st.matches.find((x) => x.id === matchId);
+        if (!m) return el("div");
+
+        const time = el("input", { class: "input", value: m.time || "", placeholder: "例如 2026-05-01 19:00" });
+        const location = el("input", { class: "input", value: m.location || "", placeholder: "线下：xx教室 / 线上：会议链接" });
+        const judges = el("input", { class: "input", value: m.judges || "", placeholder: "可选" });
+        const note = el("input", { class: "input", value: m.note || "", placeholder: "可选" });
+
+        const statusSel = el(
+          "select",
+          {},
+          [
+            el("option", { value: "not_started", selected: m.status === "not_started" }, ["未开始"]),
+            el("option", { value: "in_progress", selected: m.status === "in_progress" }, ["进行中"]),
+            el("option", { value: "ended", selected: m.status === "ended" }, ["已结束"]),
+            el("option", { value: "bye", selected: m.status === "bye" }, ["轮空晋级"]),
+          ].filter(Boolean)
+        );
+
+        const topicSel = el("select", {}, [
+          el("option", { value: "" }, ["（待分配）"]),
+          ...st.topics
+            .slice()
+            .sort((a, b) => a.title.localeCompare(b.title))
+            .map((t) => {
+              const disabled = !t.repeatable && isNonRepeatTopicUsedElsewhere(st, t.id, matchId);
+              const label = `${t.title}${t.repeatable ? "" : "（不可重复）"}${disabled ? "（已被使用）" : ""}`;
+              return el("option", { value: t.id, selected: m.topicId === t.id, disabled }, [label]);
+            }),
+        ]);
+
+        const winnerSel = el("select", {}, [
+          el("option", { value: "" }, ["（未录入）"]),
+          ...(m.teamAId ? [el("option", { value: m.teamAId, selected: m.winnerTeamId === m.teamAId }, [fmtTeamName(st, m.teamAId)])] : []),
+          ...(m.teamBId ? [el("option", { value: m.teamBId, selected: m.winnerTeamId === m.teamBId }, [fmtTeamName(st, m.teamBId)])] : []),
+          ...(m.byeTeamId ? [el("option", { value: m.byeTeamId, selected: m.winnerTeamId === m.byeTeamId }, [fmtTeamName(st, m.byeTeamId)])] : []),
+        ]);
+
+        const teamA = el("select", {}, [
+          el("option", { value: "" }, ["（空）"]),
+          ...st.teams
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((t) => el("option", { value: t.id, selected: m.teamAId === t.id }, [t.name])),
+        ]);
+        const teamB = el("select", {}, [
+          el("option", { value: "" }, ["（空）"]),
+          ...st.teams
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((t) => el("option", { value: t.id, selected: m.teamBId === t.id }, [t.name])),
+        ]);
+
+        const sideA = el("select", {}, [
+          el("option", { value: "" }, ["未分配"]),
+          el("option", { value: "pro", selected: m.teamASide === "pro" }, ["正方"]),
+          el("option", { value: "con", selected: m.teamASide === "con" }, ["反方"]),
+        ]);
+        const sideB = el("select", {}, [
+          el("option", { value: "" }, ["未分配"]),
+          el("option", { value: "pro", selected: m.teamBSide === "pro" }, ["正方"]),
+          el("option", { value: "con", selected: m.teamBSide === "con" }, ["反方"]),
+        ]);
+
+        const body = el("div", { class: "stack" }, [
+          el("div", { class: "split" }, [
+            el("div", { class: "stack" }, [el("label", {}, ["比赛时间（字符串）"]), time]),
+            el("div", { class: "stack" }, [el("label", {}, ["比赛地点 / 线上链接"]), location]),
+          ]),
+          el("div", { class: "split" }, [
+            el("div", { class: "stack" }, [el("label", {}, ["裁判 / 评委（可选）"]), judges]),
+            el("div", { class: "stack" }, [el("label", {}, ["备注（可选）"]), note]),
+          ]),
+          el("div", { class: "split" }, [
+            el("div", { class: "stack" }, [el("label", {}, ["状态"]), statusSel]),
+            el("div", { class: "stack" }, [el("label", {}, ["胜方（用于展示晋级）"]), winnerSel]),
+          ]),
+          el("div", { class: "stack" }, [el("label", {}, ["辩题"]), topicSel]),
+          el("div", { class: "divider" }),
+          el("div", { class: "split" }, [
+            el("div", { class: "stack" }, [el("label", {}, ["对阵队伍 A"]), teamA]),
+            el("div", { class: "stack" }, [el("label", {}, ["对阵队伍 B"]), teamB]),
+          ]),
+          el("div", { class: "split" }, [
+            el("div", { class: "stack" }, [el("label", {}, ["队伍 A 角色"]), sideA]),
+            el("div", { class: "stack" }, [el("label", {}, ["队伍 B 角色"]), sideB]),
+          ]),
+          el("div", { class: "row", style: "justify-content: space-between" }, [
+            el(
+              "button",
+              {
+                class: "btn danger",
+                onclick: () => {
+                  if (!confirmDanger("确定删除该赛程？删除不可恢复。")) return;
+                  const sst = loadState();
+                  sst.matches = sst.matches.filter((x) => x.id !== matchId);
+                  sst.updatedAt = nowIso();
+                  saveState(sst);
+                  toast("删除成功", "赛程已删除", "good");
+                  dlgManager.close();
+                  render();
+                },
+              },
+              ["删除赛程"]
+            ),
+            el(
+              "button",
+              {
+                class: "btn primary",
+                onclick: () => {
+                  const sst = loadState();
+                  const mm = sst.matches.find((x) => x.id === matchId);
+                  if (!mm) return;
+
+                  mm.time = time.value.trim();
+                  mm.location = location.value.trim();
+                  mm.judges = judges.value.trim();
+                  mm.note = note.value.trim();
+
+                  const newStatus = statusSel.value;
+                  mm.status = newStatus;
+
+                  const ta = teamA.value || null;
+                  const tb = teamB.value || null;
+                  mm.teamAId = ta;
+                  mm.teamBId = tb;
+
+                  const sa = sideA.value || null;
+                  const sb = sideB.value || null;
+                  mm.teamASide = sa;
+                  mm.teamBSide = sb;
+
+                  const topicId = topicSel.value || null;
+                  setMatchTopic(sst, matchId, topicId);
+
+                  const w = winnerSel.value || null;
+                  mm.winnerTeamId = w;
+
+                  if (newStatus === "bye") {
+                    // 简化：若标记为轮空，将胜方设为队伍A（若存在），否则保持
+                    if (ta) {
+                      mm.byeTeamId = ta;
+                      mm.teamAId = null;
+                      mm.teamBId = null;
+                      mm.teamASide = null;
+                      mm.teamBSide = null;
+                      mm.winnerTeamId = ta;
+                      mm.note = mm.note || "轮空晋级";
+                    }
+                  } else {
+                    mm.byeTeamId = null;
+                  }
+
+                  mm.updatedAt = nowIso();
+                  sst.updatedAt = nowIso();
+                  saveState(sst);
+                  toast("保存成功", "赛程已更新", "good");
+                  dlgManager.close();
+                  render();
+                },
+              },
+              ["保存"]
+            ),
+          ]),
+        ]);
+
+        return body;
+      }
+
+      // ========= 管理列表（队伍/辩题/赛程） =========
+      function openTeamManager() {
+        const st = loadState();
+        const name = el("input", { class: "input", placeholder: "队伍名称（必填）" });
+        const org = el("input", { class: "input", placeholder: "所属单位（可选）" });
+        const password = el("input", { class: "input", placeholder: "队伍密码（建议设置，用于队伍登录）" });
+        const members = el("textarea", {}, [""]);
+
+        const list = el("div", { class: "stack" }, []);
+        const renderList = () => {
+          const sst = loadState();
+          list.innerHTML = "";
+          if (sst.teams.length === 0) list.appendChild(el("div", { class: "faint" }, ["暂无队伍。"]));
+          for (const t of sst.teams.slice().sort((a, b) => a.name.localeCompare(b.name))) {
+            list.appendChild(
+              el("div", { class: "row", style: "justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.10); padding:8px 0" }, [
+                el("div", { class: "stack", style: "gap:4px" }, [
+                  el("strong", {}, [t.name]),
+                  el("div", { class: "faint", style: "font-size:12px" }, [t.org ? `单位：${t.org}` : "单位：未填写"]),
+                ]),
+                el(
+                  "button",
+                  {
+                    class: "btn small",
+                    onclick: () => {
+                      openTeamDetail(sst, t.id);
+                    },
+                  },
+                  ["编辑"]
+                ),
+              ])
+            );
+          }
+        };
+        renderList();
+
+        const content = el("div", { class: "stack" }, [
+          el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+            el("div", { class: "card-header" }, [el("h2", {}, ["新增队伍"]), el("span", { class: "faint", style: "font-size:12px" }, ["建议先录入队伍，再抽签"])]),
+            el("div", { class: "card-body" }, [
+              el("div", { class: "split" }, [
+                el("div", { class: "stack" }, [el("label", {}, ["队伍名称"]), name]),
+                el("div", { class: "stack" }, [el("label", {}, ["所属单位（可选）"]), org]),
+              ]),
+              el("div", { class: "stack", style: "margin-top:10px" }, [el("label", {}, ["队伍密码（队员登录用）"]), password]),
+              el("div", { class: "stack", style: "margin-top:10px" }, [el("label", {}, ["队员名单（文本即可）"]), members]),
+              el("div", { class: "row", style: "margin-top:10px; justify-content:flex-end" }, [
+                el(
+                  "button",
+                  {
+                    class: "btn primary",
+                    onclick: () => {
+                      const n = name.value.trim();
+                      if (!n) {
+                        toast("添加失败", "队伍名称不能为空", "bad");
+                        return;
+                      }
+                      const sst = loadState();
+                      sst.teams.push({
+                        id: uid("team"),
+                        name: n,
+                        org: org.value.trim(),
+                        password: password.value,
+                        members: members.value.trim(),
+                        drawNumber: null,
+                        createdAt: nowIso(),
+                        updatedAt: nowIso(),
+                      });
+                      sst.updatedAt = nowIso();
+                      saveState(sst);
+                      name.value = "";
+                      org.value = "";
+                      password.value = "";
+                      members.value = "";
+                      toast("添加成功", "队伍已创建", "good");
+                      renderList();
+                      render();
+                    },
+                  },
+                  ["添加"]
+                ),
+              ]),
+            ]),
+          ]),
+          el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+            el("div", { class: "card-header" }, [el("h2", {}, ["队伍列表"])]),
+            el("div", { class: "card-body" }, [list]),
+          ]),
+        ]);
+
+        openManager("队伍管理", "新增 / 编辑 / 删除", content);
+      }
+
+      function openTopicManager() {
+        const st = loadState();
+        const title = el("input", { class: "input", placeholder: "辩题名称（必填）" });
+        const repeatable = el("select", {}, [
+          el("option", { value: "no" }, ["不可重复"]),
+          el("option", { value: "yes" }, ["可重复"]),
+        ]);
+
+        const list = el("div", { class: "stack" }, []);
+        const renderList = () => {
+          const sst = loadState();
+          list.innerHTML = "";
+          if (sst.topics.length === 0) list.appendChild(el("div", { class: "faint" }, ["暂无辩题。"]));
+          for (const t of sst.topics.slice().sort((a, b) => a.title.localeCompare(b.title))) {
+            const usedElsewhere = !t.repeatable && (sst.topicUsage.usedNonRepeatableTopicIds || []).includes(t.id);
+            list.appendChild(
+              el("div", { class: "row", style: "justify-content:space-between; align-items:flex-start; border-bottom:1px solid rgba(255,255,255,0.10); padding:8px 0" }, [
+                el("div", { class: "stack", style: "gap:4px" }, [
+                  el("strong", {}, [t.title]),
+                  el("div", { class: "faint", style: "font-size:12px" }, [
+                    t.repeatable ? "可重复抽取" : "不可重复抽取",
+                    usedElsewhere ? " ·（当前已占用）" : "",
+                  ]),
+                ]),
+                el("div", { class: "row" }, [
+                  el(
+                    "button",
+                    {
+                      class: "btn small",
+                      onclick: () => {
+                        openManager(
+                          "编辑辩题",
+                          "修改标题/可重复性",
+                          renderTopicEditor(t.id, () => {
+                            renderList();
+                            render();
+                          })
+                        );
+                      },
+                    },
+                    ["编辑"]
+                  ),
+                ]),
+              ])
+            );
+          }
+        };
+        renderList();
+
+        const content = el("div", { class: "stack" }, [
+          el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+            el("div", { class: "card-header" }, [el("h2", {}, ["新增辩题"]), el("span", { class: "faint", style: "font-size:12px" }, ["可设置是否可重复"])]),
+            el("div", { class: "card-body" }, [
+              el("div", { class: "split" }, [
+                el("div", { class: "stack" }, [el("label", {}, ["辩题名称"]), title]),
+                el("div", { class: "stack" }, [el("label", {}, ["是否可重复抽取"]), repeatable]),
+              ]),
+              el("div", { class: "row", style: "margin-top:10px; justify-content:flex-end" }, [
+                el(
+                  "button",
+                  {
+                    class: "btn primary",
+                    onclick: () => {
+                      const tt = title.value.trim();
+                      if (!tt) {
+                        toast("添加失败", "辩题名称不能为空", "bad");
+                        return;
+                      }
+                      const sst = loadState();
+                      sst.topics.push({
+                        id: uid("topic"),
+                        title: tt,
+                        repeatable: repeatable.value === "yes",
+                        createdAt: nowIso(),
+                        updatedAt: nowIso(),
+                      });
+                      sst.updatedAt = nowIso();
+                      saveState(sst);
+                      title.value = "";
+                      repeatable.value = "no";
+                      toast("添加成功", "辩题已创建", "good");
+                      renderList();
+                      render();
+                    },
+                  },
+                  ["添加"]
+                ),
+              ]),
+            ]),
+          ]),
+          el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+            el("div", { class: "card-header" }, [el("h2", {}, ["辩题列表"])]),
+            el("div", { class: "card-body" }, [list]),
+          ]),
+        ]);
+
+        openManager("辩题库管理", "新增 / 编辑 / 删除", content);
+      }
+
+      function renderTopicEditor(topicId, onDone) {
+        const st = loadState();
+        const topic = st.topics.find((t) => t.id === topicId);
+        if (!topic) return el("div");
+        const title = el("input", { class: "input", value: topic.title });
+        const repeatable = el("select", {}, [
+          el("option", { value: "no", selected: !topic.repeatable }, ["不可重复"]),
+          el("option", { value: "yes", selected: topic.repeatable }, ["可重复"]),
+        ]);
+        return el("div", { class: "stack" }, [
+          el("div", { class: "split" }, [
+            el("div", { class: "stack" }, [el("label", {}, ["辩题名称"]), title]),
+            el("div", { class: "stack" }, [el("label", {}, ["是否可重复抽取"]), repeatable]),
+          ]),
+          el("div", { class: "row", style: "justify-content: space-between" }, [
+            el(
+              "button",
+              {
+                class: "btn danger",
+                onclick: () => {
+                  if (!confirmDanger("确定删除该辩题？删除不可恢复。")) return;
+                  const sst = loadState();
+                  sst.topics = sst.topics.filter((x) => x.id !== topicId);
+                  // 关联赛程：清空 topicId
+                  for (const m of sst.matches) {
+                    if (m.topicId === topicId) {
+                      m.topicId = null;
+                      m.updatedAt = nowIso();
+                    }
+                  }
+                  // 占用记录
+                  sst.topicUsage.usedNonRepeatableTopicIds = (sst.topicUsage.usedNonRepeatableTopicIds || []).filter((id) => id !== topicId);
+                  sst.updatedAt = nowIso();
+                  saveState(sst);
+                  toast("删除成功", "辩题已删除", "good");
+                  dlgManager.close();
+                  onDone?.();
+                },
+              },
+              ["删除辩题"]
+            ),
+            el(
+              "button",
+              {
+                class: "btn primary",
+                onclick: () => {
+                  const sst = loadState();
+                  const t = sst.topics.find((x) => x.id === topicId);
+                  if (!t) return;
+                  const tt = title.value.trim();
+                  if (!tt) {
+                    toast("保存失败", "辩题名称不能为空", "bad");
+                    return;
+                  }
+                  t.title = tt;
+                  t.repeatable = repeatable.value === "yes";
+                  t.updatedAt = nowIso();
+                  sst.updatedAt = nowIso();
+                  saveState(sst);
+                  toast("保存成功", "辩题已更新", "good");
+                  dlgManager.close();
+                  onDone?.();
+                },
+              },
+              ["保存"]
+            ),
+          ]),
+        ]);
+      }
+
+      function openMatchManager() {
+        const st = loadState();
+        const time = el("input", { class: "input", placeholder: "比赛时间（字符串）" });
+        const location = el("input", { class: "input", placeholder: "比赛地点/链接" });
+        const judges = el("input", { class: "input", placeholder: "裁判/评委（可选）" });
+
+        const teamA = el("select", {}, [
+          el("option", { value: "" }, ["（选择队伍A）"]),
+          ...st.teams
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((t) => el("option", { value: t.id }, [t.name])),
+        ]);
+        const teamB = el("select", {}, [
+          el("option", { value: "" }, ["（选择队伍B / 可不选=轮空）"]),
+          ...st.teams
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((t) => el("option", { value: t.id }, [t.name])),
+        ]);
+
+        const topicSel = el("select", {}, [
+          el("option", { value: "" }, ["（选择辩题/可留空）"]),
+          ...st.topics
+            .slice()
+            .sort((a, b) => a.title.localeCompare(b.title))
+            .map((t) => el("option", { value: t.id }, [`${t.title}${t.repeatable ? "" : "（不可重复）"}`])),
+        ]);
+
+        const list = el("div", { class: "stack" }, []);
+
+        const renderList = () => {
+          const sst = loadState();
+          list.innerHTML = "";
+          const ms = sortMatches(sst);
+          if (ms.length === 0) list.appendChild(el("div", { class: "faint" }, ["暂无赛程。"]));
+          for (const m of ms) {
+            list.appendChild(
+              el("div", { class: "row", style: "justify-content:space-between; align-items:flex-start; border-bottom:1px solid rgba(255,255,255,0.10); padding:8px 0" }, [
+                el("div", { class: "stack", style: "gap:4px; min-width: 340px" }, [
+                  el("div", { class: "row", style: "gap:8px; flex-wrap:wrap" }, [
+                    statusTag(computeMatchStatus(m)),
+                    m.time ? el("span", { class: "tag" }, [m.time]) : el("span", { class: "tag" }, ["时间：未设置"]),
+                    m.groupNumber ? el("span", { class: "tag" }, [`组号：${m.groupNumber}`]) : null,
+                    m.generatedByDraw ? el("span", { class: "tag" }, ["抽签生成"]) : el("span", { class: "tag" }, ["手动创建"]),
+                  ].filter(Boolean)),
+                  el("div", { class: "faint", style: "font-size:12px; line-height:1.5" }, [
+                    m.status === "bye"
+                      ? `轮空：${fmtTeamName(sst, m.byeTeamId)}`
+                      : `${fmtTeamName(sst, m.teamAId)} vs ${fmtTeamName(sst, m.teamBId)} · 辩题：${m.topicId ? fmtTopicName(sst, m.topicId) : "待分配"}`,
+                  ]),
+                ]),
+                el(
+                  "button",
+                  {
+                    class: "btn small",
+                    onclick: () => openMatchEditor(sst, m.id),
+                  },
+                  ["编辑"]
+                ),
+              ])
+            );
+          }
+        };
+        renderList();
+
+        const content = el("div", { class: "stack" }, [
+          el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+            el("div", { class: "card-header" }, [el("h2", {}, ["新增赛程"]), el("span", { class: "faint", style: "font-size:12px" }, ["对阵可留空=轮空"])]),
+            el("div", { class: "card-body" }, [
+              el("div", { class: "split" }, [
+                el("div", { class: "stack" }, [el("label", {}, ["比赛时间"]), time]),
+                el("div", { class: "stack" }, [el("label", {}, ["比赛地点/链接"]), location]),
+              ]),
+              el("div", { class: "split", style: "margin-top:10px" }, [
+                el("div", { class: "stack" }, [el("label", {}, ["队伍 A"]), teamA]),
+                el("div", { class: "stack" }, [el("label", {}, ["队伍 B（不选=轮空）"]), teamB]),
+              ]),
+              el("div", { class: "split", style: "margin-top:10px" }, [
+                el("div", { class: "stack" }, [el("label", {}, ["辩题（可选）"]), topicSel]),
+                el("div", { class: "stack" }, [el("label", {}, ["裁判/评委（可选）"]), judges]),
+              ]),
+              el("div", { class: "row", style: "margin-top:10px; justify-content:flex-end" }, [
+                el(
+                  "button",
+                  {
+                    class: "btn primary",
+                    onclick: () => {
+                      const a = teamA.value || null;
+                      const b = teamB.value || null;
+                      if (!a) {
+                        toast("创建失败", "至少需要选择队伍A", "bad");
+                        return;
+                      }
+                      if (b && a === b) {
+                        toast("创建失败", "队伍A与队伍B不能相同", "bad");
+                        return;
+                      }
+                      const sst = loadState();
+                      const autoSides = !!sst.settings.autoAssignSides;
+                      let teamASide = null;
+                      let teamBSide = null;
+                      if (b && autoSides) {
+                        const flip = Math.random() < 0.5;
+                        teamASide = flip ? "pro" : "con";
+                        teamBSide = flip ? "con" : "pro";
+                      }
+                      const isBye = !b;
+                      const match = {
+                        id: uid("match"),
+                        generatedByDraw: false,
+                        groupNumber: null,
+                        time: time.value.trim(),
+                        location: location.value.trim(),
+                        judges: judges.value.trim(),
+                        teamAId: isBye ? null : a,
+                        teamBId: isBye ? null : b,
+                        byeTeamId: isBye ? a : null,
+                        teamASide,
+                        teamBSide,
+                        topicId: topicSel.value || null,
+                        status: isBye ? "bye" : "not_started",
+                        winnerTeamId: isBye ? a : null,
+                        note: isBye ? "轮空晋级" : "",
+                        createdAt: nowIso(),
+                        updatedAt: nowIso(),
+                      };
+                      sst.matches.push(match);
+                      if (match.topicId) markTopicUsedIfNeeded(sst, match.topicId);
+                      sst.updatedAt = nowIso();
+                      saveState(sst);
+                      time.value = "";
+                      location.value = "";
+                      judges.value = "";
+                      teamA.value = "";
+                      teamB.value = "";
+                      topicSel.value = "";
+                      toast("创建成功", "赛程已添加", "good");
+                      renderList();
+                      render();
+                    },
+                  },
+                  ["添加"]
+                ),
+              ]),
+            ]),
+          ]),
+          el("div", { class: "card", style: "background: rgba(255,255,255,0.04)" }, [
+            el("div", { class: "card-header" }, [el("h2", {}, ["赛程列表"])]),
+            el("div", { class: "card-body" }, [list]),
+          ]),
+        ]);
+
+        openManager("赛程管理", "新增 / 编辑 / 删除", content);
+      }
+
+      // ========= 导入/导出/重置 =========
+      function exportJson() {
+        const st = loadState();
+        const blob = new Blob([JSON.stringify(st, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `辩论赛系统备份_${new Date().toISOString().slice(0, 19).replaceAll(":", "-")}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast("导出成功", "已下载 JSON 备份文件", "good");
+      }
+
+      function importJsonFile(file) {
+        const fr = new FileReader();
+        fr.onload = () => {
+          const st = safeJsonParse(String(fr.result || ""), null);
+          if (!st || typeof st !== "object") {
+            toast("导入失败", "JSON 解析失败", "bad");
+            return;
+          }
+          // 基础校验与合并到 defaultState
+          const base = defaultState();
+          const merged = {
+            ...base,
+            ...st,
+            settings: { ...base.settings, ...(st.settings || {}) },
+          };
+          merged.updatedAt = nowIso();
+          saveState(merged);
+          toast("导入成功", "数据已覆盖并生效", "good");
+          render();
+        };
+        fr.readAsText(file, "utf-8");
+      }
+
+      function loadDemoData() {
+        const demo = defaultState();
+        demo.settings.drawMax = 3;
+        demo.settings.autoAssignSides = true;
+        demo.teams = [
+          { id: uid("team"), name: "A队", org: "示例大学", password: "a123", members: "队员1（主辩）\n队员2（二辩）\n队员3（三辩）\n队员4（四辩）", drawNumber: null, createdAt: nowIso(), updatedAt: nowIso() },
+          { id: uid("team"), name: "B队", org: "示例大学", password: "b123", members: "队员1\n队员2\n队员3\n队员4", drawNumber: null, createdAt: nowIso(), updatedAt: nowIso() },
+          { id: uid("team"), name: "C队", org: "示例学院", password: "c123", members: "队员1\n队员2\n队员3\n队员4", drawNumber: null, createdAt: nowIso(), updatedAt: nowIso() },
+          { id: uid("team"), name: "D队", org: "示例学院", password: "d123", members: "队员1\n队员2\n队员3\n队员4", drawNumber: null, createdAt: nowIso(), updatedAt: nowIso() },
+          { id: uid("team"), name: "E队", org: "示例单位", password: "e123", members: "队员1\n队员2\n队员3\n队员4", drawNumber: null, createdAt: nowIso(), updatedAt: nowIso() },
+        ];
+        demo.topics = [
+          { id: uid("topic"), title: "人工智能利大于弊", repeatable: false, createdAt: nowIso(), updatedAt: nowIso() },
+          { id: uid("topic"), title: "短视频促进/阻碍深度思考", repeatable: false, createdAt: nowIso(), updatedAt: nowIso() },
+          { id: uid("topic"), title: "内卷是个人问题还是结构问题", repeatable: true, createdAt: nowIso(), updatedAt: nowIso() },
+          { id: uid("topic"), title: "当代青年更需要稳定还是冒险", repeatable: true, createdAt: nowIso(), updatedAt: nowIso() },
+        ];
+        demo.matches = [];
+        demo.groupTopics = {};
+        demo.topicUsage.usedNonRepeatableTopicIds = [];
+        demo.updatedAt = nowIso();
+        saveState(demo);
+        toast("已重置", "示例数据已加载", "good");
+        render();
+      }
+
+      function wipeAll() {
+        if (!confirmDanger("确定清空所有数据？此操作不可恢复。")) return;
+        try {
+          storageRemove(STORAGE_KEY);
+        } catch {}
+        window[MEMORY_KEY] = null;
+        toast("已清空", "localStorage 数据已删除", "good");
+        render();
+      }
+
+      // ========= 事件绑定 =========
+      $("#btnRefresh").addEventListener("click", () => render());
+      $("#matchFilter").addEventListener("change", () => render());
+      $("#btnExport").addEventListener("click", () => exportJson());
+      $("#btnImport").addEventListener("click", () => $("#fileImport").click());
+      $("#fileImport").addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (!f) return;
+        importJsonFile(f);
+      });
+
+      $("#btnAdmin").addEventListener("click", () => {
+        $("#adminPassword").value = "";
+        $("#dlgLogin").showModal();
+      });
+      $("#btnLogout").addEventListener("click", () => {
+        setAdmin(false);
+        toast("已退出", "已回到普通查看模式", "good");
+        render();
+      });
+
+      $("#btnTeamLogin").addEventListener("click", () => {
+        const st = loadState();
+        const sel = $("#teamLoginSelect");
+        sel.innerHTML = "";
+        const teams = st.teams.slice().sort((a, b) => a.name.localeCompare(b.name));
+        if (teams.length === 0) {
+          toast("无法登录", "当前没有队伍，请联系管理员先创建队伍", "warn");
+          return;
+        }
+        for (const t of teams) sel.appendChild(el("option", { value: t.id }, [t.name]));
+        $("#teamLoginPassword").value = "";
+        $("#dlgTeamLogin").showModal();
+      });
+
+      $("#btnDoTeamLogin").addEventListener("click", () => {
+        const st = loadState();
+        const teamId = $("#teamLoginSelect").value;
+        const pwd = $("#teamLoginPassword").value;
+        const team = st.teams.find((t) => t.id === teamId);
+        if (!team) {
+          toast("登录失败", "队伍不存在", "bad");
+          return;
+        }
+        if (!team.password) {
+          toast("登录失败", "该队伍未设置密码，请联系管理员设置", "bad");
+          return;
+        }
+        if (pwd !== team.password) {
+          toast("登录失败", "密码错误", "bad");
+          return;
+        }
+        setTeamSession(teamId);
+        $("#dlgTeamLogin").close();
+        toast("登录成功", `已进入队伍模式：${team.name}`, "good");
+        render();
+      });
+
+      $("#teamLoginPassword").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("#btnDoTeamLogin").click();
+      });
+
+      $("#btnTeamLogout").addEventListener("click", () => {
+        setTeamSession("");
+        toast("已退出", "已回到游客模式", "good");
+        render();
+      });
+
+      $("#btnDoLogin").addEventListener("click", () => {
+        const pwd = $("#adminPassword").value;
+        if (pwd === ADMIN_PASSWORD) {
+          setAdmin(true);
+          $("#dlgLogin").close();
+          toast("登录成功", "已进入管理模式", "good");
+          render();
+        } else {
+          toast("登录失败", "密码错误", "bad");
+        }
+      });
+      $("#adminPassword").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("#btnDoLogin").click();
+      });
+
+      $("#toggleAutoSides").addEventListener("change", (e) => {
+        const st = loadState();
+        st.settings.autoAssignSides = !!e.target.checked;
+        st.updatedAt = nowIso();
+        saveState(st);
+        toast("设置已保存", st.settings.autoAssignSides ? "将自动分配正反方" : "将改为手动抽签正反方", "good");
+        render();
+      });
+      $("#teamDrawEnabled").addEventListener("change", (e) => {
+        const st = loadState();
+        st.settings.teamDrawEnabled = e.target.value === "on";
+        st.updatedAt = nowIso();
+        saveState(st);
+        toast("设置已保存", st.settings.teamDrawEnabled ? "已开放队伍抽签" : "已关闭队伍抽签", "good");
+        render();
+      });
+      $("#teamTopicEnabled").addEventListener("change", (e) => {
+        const st = loadState();
+        st.settings.teamTopicEnabled = e.target.value === "on";
+        st.updatedAt = nowIso();
+        saveState(st);
+        toast("设置已保存", st.settings.teamTopicEnabled ? "已开放队伍抽题" : "已关闭队伍抽题", "good");
+        render();
+      });
+      $("#drawMax").addEventListener("change", (e) => {
+        const v = Math.max(1, Number(e.target.value || 3) | 0);
+        const st = loadState();
+        st.settings.drawMax = v;
+        st.updatedAt = nowIso();
+        saveState(st);
+        toast("设置已保存", `抽签序号最大值：${v}`, "good");
+        render();
+      });
+
+      // 抽签：在队伍列表/详情中逐队抽取；配对：待全队抽完后执行
+      $("#btnPairFromDraw").addEventListener("click", () => {
+        const st = loadState();
+        pairFromDrawNumbers(st);
+        saveState(st);
+        render();
+      });
+      $("#btnClearDraw").addEventListener("click", () => {
+        if (!confirmDanger("确定清空抽签/配对结果？将删除抽签生成的对阵，并清空队伍抽签号。")) return;
+        const st = loadState();
+        clearDrawAndPairings(st);
+        saveState(st);
+        toast("已清空", "抽签/配对结果已清除", "good");
+        render();
+      });
+
+      $("#btnAssignTopics").addEventListener("click", () => {
+        toast("已禁用", "为隐私起见，请在各队伍详情中逐队抽取辩题", "warn");
+      });
+      $("#btnClearTopicUsage").addEventListener("click", () => {
+        if (!confirmDanger("确定清空“不可重复辩题”的占用记录？将允许重新抽到之前用过的不可重复辩题。")) return;
+        const st = loadState();
+        st.topicUsage.usedNonRepeatableTopicIds = [];
+        st.updatedAt = nowIso();
+        saveState(st);
+        toast("已清空", "不可重复占用记录已清空", "good");
+        render();
+      });
+
+      $("#btnManageTeams").addEventListener("click", () => openTeamManager());
+      $("#btnManageTopics").addEventListener("click", () => openTopicManager());
+      $("#btnManageMatches").addEventListener("click", () => openMatchManager());
+
+      $("#btnLoadDemo").addEventListener("click", () => {
+        if (!confirmDanger("确定重置到示例数据？将覆盖当前所有数据。")) return;
+        loadDemoData();
+      });
+      $("#btnWipeAll").addEventListener("click", () => wipeAll());
+
+      // ========= 启动 =========
+      (function init() {
+        // 页面内错误捕获（用户无需打开控制台即可看到原因）
+        window.addEventListener("error", (e) => {
+          const msg = e?.message ? String(e.message) : "脚本错误";
+          toast("页面错误", msg, "bad");
+        });
+        window.addEventListener("unhandledrejection", (e) => {
+          const msg = e?.reason ? String(e.reason) : "异步错误";
+          toast("页面错误", msg, "bad");
+        });
+
+        // 初始化存储（若为空）
+        let raw = null;
+        try {
+          raw = storageGet(STORAGE_KEY);
+        } catch {
+          raw = null;
+        }
+        if (!raw && !window[MEMORY_KEY]) saveState(defaultState());
+        render();
+      })();
+    </script>
+  </body>
+</html>
+
